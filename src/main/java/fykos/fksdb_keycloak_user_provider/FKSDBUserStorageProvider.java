@@ -1,69 +1,72 @@
 package fykos.fksdb_keycloak_user_provider;
 
-import java.io.IOException;
+import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.jboss.logging.Logger;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.credential.CredentialInput;
 import org.keycloak.credential.CredentialInputUpdater;
 import org.keycloak.credential.CredentialInputValidator;
+import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
-import org.keycloak.models.SubjectCredentialManager;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.storage.UserStorageProvider;
-import org.keycloak.storage.adapter.AbstractUserAdapter;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.user.UserLookupProvider;
+import org.keycloak.storage.user.UserQueryMethodsProvider;
 
 public class FKSDBUserStorageProvider implements
 		UserStorageProvider,
 		UserLookupProvider,
+		UserQueryMethodsProvider,
 		CredentialInputValidator,
 		CredentialInputUpdater {
 
 	protected KeycloakSession session;
-	protected Properties properties;
 	protected ComponentModel model;
+	protected FKSDBUserService service;
+
 	// map of loaded users in this transaction
 	protected Map<String, UserModel> loadedUsers = new HashMap<>();
 
-	public FKSDBUserStorageProvider(KeycloakSession session, ComponentModel model, Properties properties) {
+	private static final Logger logger = Logger.getLogger(FKSDBUserStorageProvider.class);
+
+	public FKSDBUserStorageProvider(KeycloakSession session, ComponentModel model, FKSDBUserService service) {
+
 		this.session = session;
 		this.model = model;
-		this.properties = properties;
+		this.service = service;
+
+		logger.info("Provider created");
+
 	}
 
 	@Override
 	public UserModel getUserByUsername(RealmModel realm, String username) {
+		logger.info("storage user by name");
 		UserModel adapter = loadedUsers.get(username);
 		if (adapter == null) {
-			String password = properties.getProperty(username);
-			if (password != null) {
-				adapter = createAdapter(realm, username);
+			ResultSet result = this.service.getUserByUsername(username);
+			if (result != null) {
+				adapter = createAdapter(realm, result);
 				loadedUsers.put(username, adapter);
+			} else {
+				logger.warn("user does not exist");
 			}
 		}
 		return adapter;
 	}
 
-	protected UserModel createAdapter(RealmModel realm, String username) {
-		return new AbstractUserAdapter(session, realm, model) {
-			@Override
-			public String getUsername() {
-				return username;
-			}
-
-			@Override
-			public SubjectCredentialManager credentialManager() {
-				throw new IOException();
-			}
-		};
+	protected UserModel createAdapter(RealmModel realm, ResultSet set) {
+		logger.info("create user adapter");
+		return new FKSDBUserModel(set, session, realm, model);
 	}
 
 	@Override
@@ -85,7 +88,8 @@ public class FKSDBUserStorageProvider implements
 
 	@Override
 	public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
-		String password = properties.getProperty(user.getUsername());
+		// String password = properties.getProperty(user.getUsername());
+		String password = "password"; // TODO
 		return credentialType.equals(PasswordCredentialModel.TYPE) && password != null;
 	}
 
@@ -99,7 +103,8 @@ public class FKSDBUserStorageProvider implements
 		if (!supportsCredentialType(input.getType()))
 			return false;
 
-		String password = properties.getProperty(user.getUsername());
+		// String password = properties.getProperty(user.getUsername());
+		String password = "password"; // TODO
 		if (password == null)
 			return false;
 		return password.equals(input.getChallengeResponse());
@@ -120,6 +125,43 @@ public class FKSDBUserStorageProvider implements
 
 	@Override
 	public Stream<String> getDisableableCredentialTypesStream(RealmModel realm, UserModel user) {
+		return Stream.empty();
+	}
+
+	@Override
+	public Stream<UserModel> searchForUserStream(RealmModel realm, String search, Integer firstResult,
+			Integer maxResults) {
+		System.out.println("Search:" + search);
+		Predicate<String> predicate = "*".equals(search) ? username -> true : username -> username.contains(search);
+		return Stream.empty(); // TODO
+		// return properties.keySet().stream()
+		// .map(String.class::cast)
+		// .filter(predicate)
+		// .skip(firstResult)
+		// .map(username -> getUserByUsername(realm, username))
+		// .limit(maxResults);
+	}
+
+	@Override
+	public Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params, Integer firstResult,
+			Integer maxResults) {
+		// only support searching by username
+		String usernameSearchString = params.get("username");
+		if (usernameSearchString != null)
+			return searchForUserStream(realm, usernameSearchString, firstResult, maxResults);
+
+		// if we are not searching by username, return all users
+		return searchForUserStream(realm, "*", firstResult, maxResults);
+	}
+
+	@Override
+	public Stream<UserModel> getGroupMembersStream(RealmModel realm, GroupModel group, Integer firstResult,
+			Integer maxResults) {
+		return Stream.empty();
+	}
+
+	@Override
+	public Stream<UserModel> searchForUserByUserAttributeStream(RealmModel realm, String attrName, String attrValue) {
 		return Stream.empty();
 	}
 }
