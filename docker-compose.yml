@@ -28,8 +28,7 @@ services:
       - start-dev
       - --import-realm
     volumes:
-      #- ./target/fksdb-keycloak-user-provider-0.0.1.jar:/opt/keycloak/providers/fksdb-provider.jar
-      - /home/adam/Documents/git/keycloak-quickstarts/extension/user-storage-jpa/target/user-storage-jpa-example.jar:/opt/keycloak/providers/fksdb-provider.jar
+      - ./target/fksdb-keycloak-user-provider-1.0.0.jar:/opt/keycloak/providers/fksdb-provider.jar
       - ./conf/quarkus.properties:/opt/keycloak/conf/quarkus.properties:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"

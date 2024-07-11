@@ -16,43 +16,53 @@ import org.keycloak.credential.CredentialInputValidator;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.user.UserLookupProvider;
-import org.keycloak.storage.user.UserQueryMethodsProvider;
+import org.keycloak.storage.user.UserQueryProvider;
 
+import fykos.fksdb_keycloak_user_provider.entities.LoginEntity;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 
 public class FKSDBUserStorageProvider implements
 		UserStorageProvider,
 		UserLookupProvider,
-		UserQueryMethodsProvider,
+		UserQueryProvider,
 		CredentialInputValidator,
 		CredentialInputUpdater {
 
-	protected KeycloakSession session;
-	protected ComponentModel model;
-	protected FKSDBUserService service;
+	private static final Logger logger = Logger.getLogger(FKSDBUserStorageProvider.class);
 
 	protected EntityManager em;
 
-	// map of loaded users in this transaction
-	protected Map<String, UserModel> loadedUsers = new HashMap<>();
+	protected KeycloakSession session;
+	protected ComponentModel model;
 
-	private static final Logger logger = Logger.getLogger(FKSDBUserStorageProvider.class);
-
-	public FKSDBUserStorageProvider(KeycloakSession session, ComponentModel model) {
-
+	FKSDBUserStorageProvider(KeycloakSession session, ComponentModel model) {
 		this.session = session;
 		this.model = model;
 		this.em = session.getProvider(JpaConnectionProvider.class, "user-store").getEntityManager();
 
 		logger.info("Provider created");
+	}
+
+	@Override
+	public void preRemove(RealmModel realm) {
+
+	}
+
+	@Override
+	public void preRemove(RealmModel realm, GroupModel group) {
+
+	}
+
+	@Override
+	public void preRemove(RealmModel realm, RoleModel role) {
 
 	}
 
@@ -65,7 +75,7 @@ public class FKSDBUserStorageProvider implements
 	public UserModel getUserById(RealmModel realm, String id) {
 		logger.info("Get user by ID: " + id);
 		String persistenceId = StorageId.externalId(id);
-		FKSDBUserEntity entity = em.find(FKSDBUserEntity.class, persistenceId);
+		LoginEntity entity = em.find(LoginEntity.class, persistenceId);
 		if (entity == null) {
 			logger.info("Could not find user by ID: " + id);
 			return null;
@@ -76,9 +86,9 @@ public class FKSDBUserStorageProvider implements
 	@Override
 	public UserModel getUserByUsername(RealmModel realm, String username) {
 		logger.info("Get user by username(login): " + username);
-		TypedQuery<FKSDBUserEntity> query = em.createNamedQuery("getUserByUsername", FKSDBUserEntity.class);
+		TypedQuery<LoginEntity> query = em.createNamedQuery("getUserByUsername", LoginEntity.class);
 		query.setParameter("login", username);
-		List<FKSDBUserEntity> result = query.getResultList();
+		List<LoginEntity> result = query.getResultList();
 		if (result.isEmpty()) {
 			logger.info("Could not find user by username: " + username);
 			return null;
@@ -89,21 +99,23 @@ public class FKSDBUserStorageProvider implements
 
 	@Override
 	public UserModel getUserByEmail(RealmModel realm, String email) {
-		logger.info("Get user by email: " + email);
-		TypedQuery<FKSDBUserEntity> query = em.createNamedQuery("getUserByEmail", FKSDBUserEntity.class);
-		query.setParameter("email", email);
-		List<FKSDBUserEntity> result = query.getResultList();
-		if (result.isEmpty()) {
-			logger.info("Could not find user by email: " + email);
-			return null;
-		}
+		// logger.info("Get user by email: " + email);
+		// TypedQuery<LoginEntity> query = em.createNamedQuery("getUserByEmail",
+		// LoginEntity.class);
+		// query.setParameter("email", email);
+		// List<LoginEntity> result = query.getResultList();
+		// if (result.isEmpty()) {
+		// logger.info("Could not find user by email: " + email);
+		// return null;
+		// }
 
-		return new UserAdapter(session, realm, model, result.get(0));
+		// return new UserAdapter(session, realm, model, result.get(0));
+		return null; // TODO
 	}
 
 	@Override
 	public boolean supportsCredentialType(String credentialType) {
-		return credentialType.equals(PasswordCredentialModel.TYPE);
+		return PasswordCredentialModel.TYPE.equals(credentialType);
 	}
 
 	@Override
@@ -124,7 +136,7 @@ public class FKSDBUserStorageProvider implements
 
 	@Override
 	public Stream<String> getDisableableCredentialTypesStream(RealmModel realm, UserModel user) {
-		if (getUserAdapter(user).getPassword() != null) {
+		if (getUserAdapter(user).getHash() != null) {
 			Set<String> set = new HashSet<>();
 			set.add(PasswordCredentialModel.TYPE);
 			return set.stream();
@@ -133,8 +145,9 @@ public class FKSDBUserStorageProvider implements
 		}
 	}
 
+	@Override
 	public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
-		return supportsCredentialType(credentialType) && getUserAdapter(user).getPassword() != null;
+		return supportsCredentialType(credentialType) && getUserAdapter(user).getHash() != null;
 	}
 
 	@Override
@@ -155,11 +168,18 @@ public class FKSDBUserStorageProvider implements
 	}
 
 	@Override
+	public int getUsersCount(RealmModel realm) {
+		Object count = em.createNamedQuery("getUserCount")
+				.getSingleResult();
+		return ((Number) count).intValue();
+	}
+
+	@Override
 	public Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params, Integer firstResult,
 			Integer maxResults) {
 
 		String search = params.get(UserModel.SEARCH);
-		TypedQuery<FKSDBUserEntity> query = em.createNamedQuery("searchForUser", FKSDBUserEntity.class);
+		TypedQuery<LoginEntity> query = em.createNamedQuery("searchForUser", LoginEntity.class);
 		String lower = search != null ? search.toLowerCase() : "";
 		query.setParameter("search", "%" + lower + "%");
 		if (firstResult != null) {
