@@ -6,12 +6,13 @@
     <persistence-unit name="user-store" transaction-type="JTA">
         <class>fykos.fksdb_keycloak_user_provider.entities.LoginEntity</class>
         <class>fykos.fksdb_keycloak_user_provider.entities.PersonEntity</class>
+        <class>fykos.fksdb_keycloak_user_provider.entities.PersonInfoEntity</class>
         <properties>
             <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect" />
             <!-- Sets the name of the datasource to be the same as the datasource name in quarkus.properties-->
             <property name="hibernate.connection.datasource" value="user-store" />
             <property name="jakarta.persistence.transactionType" value="JTA" />
-            <property name="hibernate.show_sql" value="true" />
+            <property name="hibernate.show_sql" value="false" />
         </properties>
     </persistence-unit>
 </persistence>

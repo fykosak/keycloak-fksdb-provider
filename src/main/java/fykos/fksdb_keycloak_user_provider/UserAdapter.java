@@ -21,6 +21,7 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		super(session, realm, model);
 		this.loginEntity = loginEntity;
 		keycloakId = StorageId.keycloakId(model, loginEntity.getLoginId());
+
 	}
 
 	public String getHash() {
@@ -37,15 +38,25 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		throw new ReadOnlyException("Username is read only");
 	}
 
-	//  @Override
-	//  public String getEmail() {
-	// return entity.getEmail();
-	//  }
+	@Override
+	public String getFirstName() {
+		return loginEntity.getPerson().getOtherName();
+	}
 
-	//  @Override
-	//  public void setEmail(String email) {
-	// throw new ReadOnlyException("Email is read only");
-	//  }
+	@Override
+	public String getLastName() {
+		return loginEntity.getPerson().getFamilyName();
+	}
+
+	@Override
+	public String getEmail() {
+		return loginEntity.getPerson().getPersonInfo().getEmail();
+	}
+
+	@Override
+	public boolean isEmailVerified() {
+		return this.getEmail() != null;
+	}
 
 	@Override
 	public String getId() {

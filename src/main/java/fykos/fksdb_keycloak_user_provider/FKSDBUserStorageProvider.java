@@ -18,6 +18,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.cache.CachedUserModel;
+import org.keycloak.models.cache.OnUserCache;
 import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.storage.UserStorageProvider;
@@ -34,9 +36,10 @@ public class FKSDBUserStorageProvider implements
 		UserLookupProvider,
 		UserQueryProvider,
 		CredentialInputValidator,
-		CredentialInputUpdater {
+		OnUserCache {
 
 	private static final Logger logger = Logger.getLogger(FKSDBUserStorageProvider.class);
+	public static final String PASSWORD_CACHE_KEY = UserAdapter.class.getName() + ".password";
 
 	protected EntityManager em;
 
@@ -85,7 +88,7 @@ public class FKSDBUserStorageProvider implements
 
 	@Override
 	public UserModel getUserByUsername(RealmModel realm, String username) {
-		logger.info("Get user by username(login): " + username);
+		logger.info("Get user by username (login): " + username);
 		TypedQuery<LoginEntity> query = em.createNamedQuery("getUserByUsername", LoginEntity.class);
 		query.setParameter("login", username);
 		List<LoginEntity> result = query.getResultList();
@@ -114,34 +117,23 @@ public class FKSDBUserStorageProvider implements
 	}
 
 	@Override
+	public void onCache(RealmModel realm, CachedUserModel user, UserModel delegate) {
+		String hash = ((UserAdapter) delegate).getHash();
+		if (hash != null) {
+			user.getCachedWith().put(PASSWORD_CACHE_KEY, hash);
+		}
+	}
+
+	@Override
 	public boolean supportsCredentialType(String credentialType) {
 		return PasswordCredentialModel.TYPE.equals(credentialType);
 	}
 
-	@Override
-	public boolean updateCredential(RealmModel realm, UserModel user, CredentialInput input) {
-		if (input.getType().equals(PasswordCredentialModel.TYPE))
-			throw new ReadOnlyException("user is read only for this update");
-
-		return false;
-	}
-
 	public UserAdapter getUserAdapter(UserModel user) {
-		return (UserAdapter) user;
-	}
-
-	@Override
-	public void disableCredentialType(RealmModel realm, UserModel user, String credentialType) {
-	}
-
-	@Override
-	public Stream<String> getDisableableCredentialTypesStream(RealmModel realm, UserModel user) {
-		if (getUserAdapter(user).getHash() != null) {
-			Set<String> set = new HashSet<>();
-			set.add(PasswordCredentialModel.TYPE);
-			return set.stream();
+		if (user instanceof CachedUserModel) {
+			return (UserAdapter) ((CachedUserModel) user).getDelegateForUpdate();
 		} else {
-			return Stream.empty();
+			return (UserAdapter) user;
 		}
 	}
 
@@ -165,6 +157,16 @@ public class FKSDBUserStorageProvider implements
 		// logger.info("Inputed password: " + inputedPassword);
 
 		// return userHash.equals(inputedPassword);
+	}
+
+	public String getHash(UserModel user) {
+		String password = null;
+		if (user instanceof CachedUserModel) {
+			password = (String) ((CachedUserModel) user).getCachedWith().get(PASSWORD_CACHE_KEY);
+		} else if (user instanceof UserAdapter) {
+			password = ((UserAdapter) user).getHash();
+		}
+		return password;
 	}
 
 	@Override

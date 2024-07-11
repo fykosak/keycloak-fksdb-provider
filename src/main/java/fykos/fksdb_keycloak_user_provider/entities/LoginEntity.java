@@ -11,11 +11,11 @@ import jakarta.persistence.Table;
 
 @NamedQueries({
 		@NamedQuery(name = "getUserByUsername", query = "select l from LoginEntity l where l.login = :login"),
-		// @NamedQuery(name = "getUserByEmail", query = """
-		// select l from LoginEntity l
-		// left join person_info pi on pi.person_id = l.person_id
-		// where pi.email = :email
-		// """),
+		@NamedQuery(name = "getUserByEmail", query = """
+					select l from LoginEntity l
+					left join PersonInfoEntity pi
+					where pi.email = :email
+				"""),
 		@NamedQuery(name = "getUserCount", query = "select count(l) from LoginEntity l"),
 		@NamedQuery(name = "getAllUsers", query = "select l from LoginEntity l"),
 		@NamedQuery(name = "searchForUser", query = "select l from LoginEntity l where " +

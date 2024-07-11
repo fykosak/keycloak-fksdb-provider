@@ -3,6 +3,7 @@ package fykos.fksdb_keycloak_user_provider.entities;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -19,6 +20,12 @@ public class PersonEntity {
 	@Column(name = "other_name")
 	private String otherName;
 
+	@OneToOne(mappedBy = "person")
+	private LoginEntity login;
+
+	@OneToOne(mappedBy = "person")
+	private PersonInfoEntity personInfo;
+
 	public String getPersonId() {
 		return personId;
 	}
@@ -33,5 +40,13 @@ public class PersonEntity {
 
 	public String getName() {
 		return otherName + " " + familyName;
+	}
+
+	public LoginEntity getLogin() {
+		return login;
+	}
+
+	public PersonInfoEntity getPersonInfo() {
+		return personInfo;
 	}
 }
