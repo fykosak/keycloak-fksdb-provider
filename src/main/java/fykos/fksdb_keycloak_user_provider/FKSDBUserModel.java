@@ -3,6 +3,7 @@ package fykos.fksdb_keycloak_user_provider;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.jboss.logging.Logger;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.credential.UserCredentialManager;
 import org.keycloak.models.KeycloakSession;
@@ -15,10 +16,11 @@ public class FKSDBUserModel extends AbstractUserAdapter {
 	private String login;
 	private String hash;
 
+	private static final Logger logger = Logger.getLogger(FKSDBUserService.class);
+
 	FKSDBUserModel(ResultSet set, KeycloakSession session, RealmModel realm, ComponentModel storageProviderModel) {
 		super(session, realm, storageProviderModel);
 		try {
-			set.next();
 			this.login = set.getString("login");
 			this.hash = set.getString("hash");
 		} catch (SQLException e) {
@@ -29,6 +31,10 @@ public class FKSDBUserModel extends AbstractUserAdapter {
 	@Override
 	public String getUsername() {
 		return login;
+	}
+
+	public String getHash() {
+		return hash;
 	}
 
 	@Override

@@ -1,0 +1,4 @@
+quarkus.datasource.user-store.db-kind=mysql
+quarkus.datasource.user-store.jdbc.url=jdbc:mysql://host.name/db
+quarkus.datasource.user-store.username=user
+quarkus.datasource.user-store.password=password

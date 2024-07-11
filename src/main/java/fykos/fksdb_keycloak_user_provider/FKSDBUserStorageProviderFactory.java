@@ -43,7 +43,7 @@ public class FKSDBUserStorageProviderFactory
 	@Override
 	public void init(Config.Scope config) {
 
-		logger.info("FKSDB created");
+		logger.info("FKSDB storage provider created");
 	}
 
 	@Override
@@ -55,7 +55,7 @@ public class FKSDBUserStorageProviderFactory
 
 		FKSDBUserService userService = new FKSDBUserService(dbUrl, username, password);
 
-		return new FKSDBUserStorageProvider(session, model, userService);
+		return new FKSDBUserStorageProvider(session, model);
 	}
 
 	@Override

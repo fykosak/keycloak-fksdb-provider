@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import org.jboss.logging.Logger;
 
@@ -28,6 +27,9 @@ class FKSDBUserService {
 			Connection connection = DriverManager.getConnection(this.dbUrl, this.dbUsername, this.dbPassword);
 			ResultSet resultSet = connection.createStatement()
 					.executeQuery("SELECT * FROM login WHERE login = '" + username + "'");
+			if (!resultSet.next()) {
+				return null;
+			}
 			return resultSet;
 		} catch (SQLException e) {
 			e.printStackTrace();
