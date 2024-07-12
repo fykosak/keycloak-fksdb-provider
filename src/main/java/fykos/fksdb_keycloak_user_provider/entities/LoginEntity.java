@@ -28,7 +28,7 @@ public class LoginEntity {
 
 	@Id
 	@Column(name = "login_id")
-	private String loginId;
+	private Integer loginId;
 
 	private String login;
 	private String hash;
@@ -37,7 +37,7 @@ public class LoginEntity {
 	@JoinColumn(name = "person_id")
 	private PersonEntity person;
 
-	public String getLoginId() {
+	public Integer getLoginId() {
 		return loginId;
 	}
 

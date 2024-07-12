@@ -9,6 +9,7 @@ import org.keycloak.storage.StorageId;
 import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 
 import fykos.fksdb_keycloak_user_provider.entities.LoginEntity;
+import fykos.fksdb_keycloak_user_provider.entities.PersonEntity;
 
 public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 
@@ -20,12 +21,8 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	public UserAdapter(KeycloakSession session, RealmModel realm, ComponentModel model, LoginEntity loginEntity) {
 		super(session, realm, model);
 		this.loginEntity = loginEntity;
-		keycloakId = StorageId.keycloakId(model, loginEntity.getLoginId());
+		keycloakId = StorageId.keycloakId(model, loginEntity.getLoginId().toString());
 
-	}
-
-	public String getHash() {
-		return loginEntity.getHash();
 	}
 
 	@Override
@@ -61,5 +58,13 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	@Override
 	public String getId() {
 		return keycloakId;
+	}
+
+	public LoginEntity getLogin() {
+		return loginEntity;
+	}
+
+	public PersonEntity getPerson() {
+		return loginEntity.getPerson();
 	}
 }

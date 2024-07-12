@@ -1,17 +1,20 @@
 package fykos.fksdb_keycloak_user_provider;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
+import javax.xml.bind.DatatypeConverter;
+
+import org.apache.commons.codec.digest.DigestUtils;
 import org.jboss.logging.Logger;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.credential.CredentialInput;
-import org.keycloak.credential.CredentialInputUpdater;
 import org.keycloak.credential.CredentialInputValidator;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
@@ -21,7 +24,6 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.cache.CachedUserModel;
 import org.keycloak.models.cache.OnUserCache;
 import org.keycloak.models.credential.PasswordCredentialModel;
-import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.user.UserLookupProvider;
@@ -118,7 +120,7 @@ public class FKSDBUserStorageProvider implements
 
 	@Override
 	public void onCache(RealmModel realm, CachedUserModel user, UserModel delegate) {
-		String hash = ((UserAdapter) delegate).getHash();
+		String hash = ((UserAdapter) delegate).getLogin().getHash();
 		if (hash != null) {
 			user.getCachedWith().put(PASSWORD_CACHE_KEY, hash);
 		}
@@ -139,24 +141,26 @@ public class FKSDBUserStorageProvider implements
 
 	@Override
 	public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
-		return supportsCredentialType(credentialType) && getUserAdapter(user).getHash() != null;
+		return supportsCredentialType(credentialType) && getUserAdapter(user).getLogin().getHash() != null;
 	}
 
 	@Override
 	public boolean isValid(RealmModel realm, UserModel user, CredentialInput input) {
-		return true;
-		// TODO
-		// FKSDBUserModel userModel = (FKSDBUserModel) user;
-		// String inputedPassword = input.getChallengeResponse();
-		// String userHash = userModel.getHash();
-		// if (inputedPassword == null || userHash == null) {
-		// return false;
-		// }
+		String inputedPassword = input.getChallengeResponse();
 
-		// logger.info("UserHash: " + userHash);
-		// logger.info("Inputed password: " + inputedPassword);
+		if (inputedPassword == null) {
+			return false;
+		}
 
-		// return userHash.equals(inputedPassword);
+		LoginEntity login = getUserAdapter(user).getLogin();
+		if (login == null || login.getHash() == null) {
+			return false;
+		}
+
+		// hash function as per FKSDB
+		String computedHash = DigestUtils.sha1Hex(login.getLoginId() + DigestUtils.md5Hex(inputedPassword));
+
+		return computedHash.equals(login.getHash());
 	}
 
 	public String getHash(UserModel user) {
@@ -164,7 +168,7 @@ public class FKSDBUserStorageProvider implements
 		if (user instanceof CachedUserModel) {
 			password = (String) ((CachedUserModel) user).getCachedWith().get(PASSWORD_CACHE_KEY);
 		} else if (user instanceof UserAdapter) {
-			password = ((UserAdapter) user).getHash();
+			password = ((UserAdapter) user).getLogin().getHash();
 		}
 		return password;
 	}

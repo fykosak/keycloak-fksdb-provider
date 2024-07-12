@@ -12,7 +12,7 @@ public class PersonEntity {
 
 	@Id
 	@Column(name = "person_id")
-	private String personId;
+	private int personId;
 
 	@Column(name = "family_name")
 	private String familyName;
@@ -26,7 +26,7 @@ public class PersonEntity {
 	@OneToOne(mappedBy = "person")
 	private PersonInfoEntity personInfo;
 
-	public String getPersonId() {
+	public int getPersonId() {
 		return personId;
 	}
 
