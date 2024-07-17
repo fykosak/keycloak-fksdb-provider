@@ -1,14 +1,8 @@
 package fykos.fksdb_keycloak_user_provider;
 
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
-import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jboss.logging.Logger;
@@ -30,6 +24,7 @@ import org.keycloak.storage.user.UserLookupProvider;
 import org.keycloak.storage.user.UserQueryProvider;
 
 import fykos.fksdb_keycloak_user_provider.entities.LoginEntity;
+import fykos.fksdb_keycloak_user_provider.entities.PersonEntity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 
@@ -154,6 +149,12 @@ public class FKSDBUserStorageProvider implements
 
 		LoginEntity login = getUserAdapter(user).getLogin();
 		if (login == null || login.getHash() == null) {
+			return false;
+		}
+
+		// require person to be an organizer
+		PersonEntity person = login.getPerson();
+		if (person == null || person.getOrganizers().size() == 0) {
 			return false;
 		}
 

@@ -1,8 +1,11 @@
 package fykos.fksdb_keycloak_user_provider.entities;
 
+import java.util.Collection;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
@@ -26,6 +29,9 @@ public class PersonEntity {
 	@OneToOne(mappedBy = "person")
 	private PersonInfoEntity personInfo;
 
+	@OneToMany(mappedBy = "person")
+	private Collection<OrganizerEntity> organizers;
+
 	public int getPersonId() {
 		return personId;
 	}
@@ -48,5 +54,9 @@ public class PersonEntity {
 
 	public PersonInfoEntity getPersonInfo() {
 		return personInfo;
+	}
+
+	public Collection<OrganizerEntity> getOrganizers() {
+		return organizers;
 	}
 }
