@@ -1,7 +1,8 @@
+name: keycloak
+
 services:
   postgres:
     image: postgres
-    restart: always
     environment:
       POSTGRES_DB: keycloak
       POSTGRES_USER: keycloak
@@ -11,10 +12,6 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:25.0.1
-    #image: keycloak:24.0.4
-    #build:
-    #  context: .
-    restart: unless-stopped
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
@@ -28,7 +25,7 @@ services:
       - start-dev
       - --import-realm
     volumes:
-      - ./target/fksdb-keycloak-user-provider-1.0.0.jar:/opt/keycloak/providers/fksdb-provider.jar
-      - ./conf/quarkus.properties:/opt/keycloak/conf/quarkus.properties:ro
+      - ../target/fksdb-keycloak-user-provider.jar:/opt/keycloak/providers/fksdb-provider.jar
+      - ./config:/opt/keycloak/conf
     extra_hosts:
       - "host.docker.internal:host-gateway"

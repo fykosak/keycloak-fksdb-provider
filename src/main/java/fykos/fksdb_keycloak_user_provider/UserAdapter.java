@@ -59,13 +59,28 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	}
 
 	@Override
+	public void setFirstName(String name) {
+		throw new ReadOnlyException("First name is read only");
+	}
+
+	@Override
 	public String getLastName() {
 		return loginEntity.getPerson().getFamilyName();
 	}
 
 	@Override
+	public void setLastName(String name) {
+		throw new ReadOnlyException("Last name is read only");
+	}
+
+	@Override
 	public String getEmail() {
 		return loginEntity.getPerson().getPersonInfo().getEmail();
+	}
+
+	@Override
+	public void setEmail(String email) {
+		throw new ReadOnlyException("Email is read only");
 	}
 
 	@Override

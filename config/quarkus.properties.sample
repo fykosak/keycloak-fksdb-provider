@@ -1,4 +1,7 @@
+# Keep this
 quarkus.datasource.user-store.db-kind=mysql
-quarkus.datasource.user-store.jdbc.url=jdbc:mysql://host.name/db
+
+# Change these lines
+quarkus.datasource.user-store.jdbc.url=jdbc:mysql://host.name/fksdb
 quarkus.datasource.user-store.username=user
 quarkus.datasource.user-store.password=password

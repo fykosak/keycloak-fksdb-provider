@@ -1,3 +1,4 @@
 target
-postgres
+docker/config
+docker/postgres
 conf/quarkus.properties

@@ -1,0 +1,28 @@
+name: keycloak
+
+services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak # change this
+      POSTGRES_PASSWORD: password # change this
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+
+  keycloak:
+    image: ghcr.io/fykosak/keycloak-fksdb-provider:latest
+    environment:
+      KEYCLOAK_ADMIN: admin # change this
+      KEYCLOAK_ADMIN_PASSWORD: admin # change this
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres/keycloak
+      KC_DB_USERNAME: keycloak # change this
+      KC_DB_PASSWORD: password # change this
+      # disable https and enable http for being behind reverse proxy
+      KC_HOSTNAME_STRICT: false
+      KC_HTTP_ENABLED: true
+    ports:
+      - 8080:8080
+    volumes:
+      - ./config:/opt/keycloak/conf
