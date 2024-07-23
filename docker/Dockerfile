@@ -1,3 +1,8 @@
+# Dockerfile that build JAR of the provider, installs keycloak from github releases
+# and puts it all together.
+# Reason for manual install instead of keycloak image: keycloak image is based on RHEL9
+# that needs x86-64-v2, which the current server does not support.
+
 # build JAR using maven
 FROM maven:3-eclipse-temurin-21 AS maven
 WORKDIR /build/
@@ -8,17 +13,33 @@ RUN mvn install
 COPY src src
 RUN mvn clean package
 
-# mount provider, build and run
-FROM quay.io/keycloak/keycloak:25.0.1 AS builder
-WORKDIR /opt/keycloak/
+# install everyting
+FROM eclipse-temurin:21 AS builder
+ARG version="25.0.1"
+ARG archive_checksum="8109ac7505c6f70763c247b5e52be4667585b0ce"
+
+WORKDIR /build/
+
+# install install
+ADD https://github.com/keycloak/keycloak/releases/download/${version}/keycloak-${version}.tar.gz keycloak.tar.gz
+RUN echo "${archive_checksum} keycloak.tar.gz" | sha1sum -c -
+
+RUN tar -xvzf keycloak.tar.gz
+RUN mv keycloak-${version} keycloak
+
+# install provider and run
+FROM eclipse-temurin:21
+USER 1000:1000
+WORKDIR /opt/keycloak
 
 # enable health statistics
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
 
-COPY --chown=keycloak:keycloak --chmod=744 docker/entrypoint.sh /app/entrypoint.sh
-COPY --chown=keycloak:keycloak config/ /app/config/
+COPY --chown=1000:1000 --chmod=744 docker/entrypoint.sh /app/entrypoint.sh
+COPY --chown=1000:1000 config/ /app/config/
 
-COPY --from=maven --chown=keycloak:keycloak --chmod=644 /build/target/fksdb-keycloak-user-provider.jar providers/fksdb-provider.jar
+COPY --from=builder --chown=1000:1000 /build/keycloak/ .
+COPY --from=maven --chown=1000:1000 --chmod=644 /build/target/fksdb-keycloak-user-provider.jar providers/fksdb-provider.jar
 
 ENTRYPOINT /app/entrypoint.sh
