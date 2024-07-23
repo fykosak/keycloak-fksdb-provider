@@ -29,17 +29,19 @@ RUN mv keycloak-${version} keycloak
 
 # install provider and run
 FROM eclipse-temurin:21
-USER 1000:1000
 WORKDIR /opt/keycloak
 
 # enable health statistics
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
 
-COPY --chown=1000:1000 --chmod=744 docker/entrypoint.sh /app/entrypoint.sh
-COPY --chown=1000:1000 config/ /app/config/
+COPY --chmod=555 docker/entrypoint.sh /app/entrypoint.sh
+COPY config/ /app/config/
 
 COPY --from=builder --chown=1000:1000 /build/keycloak/ .
-COPY --from=maven --chown=1000:1000 --chmod=644 /build/target/fksdb-keycloak-user-provider.jar providers/fksdb-provider.jar
+COPY --from=maven --chmod=644 /build/target/fksdb-keycloak-user-provider.jar providers/fksdb-provider.jar
+
+# enable custom user to write to certain system files
+RUN chmod -R 777 lib && mkdir -m 777 data
 
 ENTRYPOINT /app/entrypoint.sh
