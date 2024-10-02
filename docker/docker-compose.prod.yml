@@ -11,11 +11,7 @@ services:
       - ./postgres:/var/lib/postgresql/data
 
   keycloak:
-    #image: ghcr.io/fykosak/keycloak-fksdb-provider:latest
-    image: keycloak
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    image: ghcr.io/fykosak/keycloak-fksdb-provider:master
     environment:
       KEYCLOAK_ADMIN: admin # change this
       KEYCLOAK_ADMIN_PASSWORD: admin # change this

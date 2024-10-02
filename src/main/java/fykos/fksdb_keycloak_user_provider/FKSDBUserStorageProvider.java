@@ -99,18 +99,17 @@ public class FKSDBUserStorageProvider implements
 
 	@Override
 	public UserModel getUserByEmail(RealmModel realm, String email) {
-		// logger.info("Get user by email: " + email);
-		// TypedQuery<LoginEntity> query = em.createNamedQuery("getUserByEmail",
-		// LoginEntity.class);
-		// query.setParameter("email", email);
-		// List<LoginEntity> result = query.getResultList();
-		// if (result.isEmpty()) {
-		// logger.info("Could not find user by email: " + email);
-		// return null;
-		// }
+		logger.info("Get user by email: " + email);
+		TypedQuery<LoginEntity> query = em.createNamedQuery("getUserByEmail",
+				LoginEntity.class);
+		query.setParameter("email", email);
+		List<LoginEntity> result = query.getResultList();
+		if (result.isEmpty()) {
+			logger.info("Could not find user by email: " + email);
+			return null;
+		}
 
-		// return new UserAdapter(session, realm, model, result.get(0));
-		return null; // TODO
+		return new UserAdapter(session, realm, model, result.get(0));
 	}
 
 	@Override
