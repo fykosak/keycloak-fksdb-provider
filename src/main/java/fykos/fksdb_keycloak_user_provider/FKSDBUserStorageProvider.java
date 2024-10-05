@@ -26,6 +26,7 @@ import org.keycloak.storage.user.UserQueryProvider;
 import fykos.fksdb_keycloak_user_provider.entities.LoginEntity;
 import fykos.fksdb_keycloak_user_provider.entities.PersonEntity;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 
 public class FKSDBUserStorageProvider implements
@@ -73,7 +74,6 @@ public class FKSDBUserStorageProvider implements
 
 	@Override
 	public UserModel getUserById(RealmModel realm, String id) {
-		logger.info("Get user by ID: " + id);
 		String persistenceId = StorageId.externalId(id);
 		LoginEntity entity = em.find(LoginEntity.class, persistenceId);
 		if (entity == null) {
@@ -155,6 +155,11 @@ public class FKSDBUserStorageProvider implements
 		PersonEntity person = login.getPerson();
 		if (person == null || person.getOrganizers().size() == 0) {
 			return false;
+		}
+
+		// require at least one FKSDB role to be active
+		if (getUserAdapter(user).getRoles().size() == 0) {
+				return false;
 		}
 
 		// hash function as per FKSDB

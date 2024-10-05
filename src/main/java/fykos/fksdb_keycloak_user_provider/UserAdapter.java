@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 import org.keycloak.component.ComponentModel;
+import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
@@ -18,17 +19,20 @@ import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 import fykos.fksdb_keycloak_user_provider.entities.LoginEntity;
 import fykos.fksdb_keycloak_user_provider.entities.OrganizerEntity;
 import fykos.fksdb_keycloak_user_provider.entities.PersonEntity;
+import fykos.fksdb_keycloak_user_provider.services.ContestYearService;
+import fykos.fksdb_keycloak_user_provider.services.OrganizerService;
+import jakarta.persistence.EntityManager;
 
 public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 
-	private static final Logger logger = Logger.getLogger(UserAdapter.class);
-
 	protected LoginEntity loginEntity;
 	protected String keycloakId;
+	protected EntityManager em;
 
 	public UserAdapter(KeycloakSession session, RealmModel realm, ComponentModel model, LoginEntity loginEntity) {
 		super(session, realm, model);
 		this.loginEntity = loginEntity;
+		this.em = session.getProvider(JpaConnectionProvider.class, "user-store").getEntityManager();
 
 		// generate keycloak specific id
 		keycloakId = StorageId.keycloakId(model, loginEntity.getLoginId().toString());
@@ -128,10 +132,20 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		}
 	}
 
-	private Set<String> getRoles() {
+	/**
+	 * Get roles assigned to the user based on DB data.
+	 * Assigns `fksdb-<contest>` roles for active organizers of a contest and
+	 * `fksdb-<contest>-<app>` roles when user has an active override for one
+	 * specific application.
+	 *
+	 */
+	public Set<String> getRoles() {
 		Map<Integer, String> contestMap = new HashMap<>();
 		contestMap.put(1, "fykos");
 		contestMap.put(2, "vyfuk");
+
+		ContestYearService contestYearService = new ContestYearService(em);
+		OrganizerService organizerService = new OrganizerService(contestYearService);
 
 		Set<String> roles = new HashSet<String>();
 
@@ -141,10 +155,16 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 				continue;
 			}
 
-			roles.add("fksdb-" + contest);
+			// Contest role for active organizer
+			if (organizerService.isOrganizerActive(organizer)) {
+				roles.add("fksdb-" + contest);
+			}
+
+			// Explicit app roles
 			if (organizer.getAllowWiki()) {
 				roles.add("fksdb-" + contest + "-wiki");
 			}
+
 			if (organizer.getAllowPM()) {
 				roles.add("fksdb-" + contest + "-pm");
 			}
