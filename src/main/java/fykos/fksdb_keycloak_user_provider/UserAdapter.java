@@ -2,11 +2,15 @@ package fykos.fksdb_keycloak_user_provider;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
+import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
@@ -28,6 +32,8 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	protected LoginEntity loginEntity;
 	protected String keycloakId;
 	protected EntityManager em;
+	protected Map<Integer, String> contestMap = new HashMap<>();
+	protected Map<Integer, String> contestEmailSuffixMap = new HashMap<>();
 
 	public UserAdapter(KeycloakSession session, RealmModel realm, ComponentModel model, LoginEntity loginEntity) {
 		super(session, realm, model);
@@ -36,6 +42,12 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 
 		// generate keycloak specific id
 		keycloakId = StorageId.keycloakId(model, loginEntity.getLoginId().toString());
+
+		contestMap.put(1, "fykos");
+		contestMap.put(2, "vyfuk");
+
+		contestEmailSuffixMap.put(1, "@fykos.cz");
+		contestEmailSuffixMap.put(2, "@vyfuk.org");
 
 		syncRoles();
 	}
@@ -140,10 +152,6 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	 *
 	 */
 	public Set<String> getRoles() {
-		Map<Integer, String> contestMap = new HashMap<>();
-		contestMap.put(1, "fykos");
-		contestMap.put(2, "vyfuk");
-
 		ContestYearService contestYearService = new ContestYearService(em);
 		OrganizerService organizerService = new OrganizerService(contestYearService);
 
@@ -171,5 +179,90 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		}
 
 		return roles;
+	}
+
+	@Override
+	public void setSingleAttribute(String name, String value) {
+		throw new ReadOnlyException("Users are read only. Use FKSDB to manage user data.");
+	}
+
+	@Override
+	public void removeAttribute(String name) {
+		throw new ReadOnlyException("Users are read only. Use FKSDB to manage user data.");
+	}
+
+	@Override
+	public void setAttribute(String name, List<String> values) {
+		throw new ReadOnlyException("Users are read only. Use FKSDB to manage user data.");
+	}
+
+	@Override
+	public String getFirstAttribute(String name) {
+		if (name.equals("firstName")) {
+			return getFirstName();
+		} if (name.equals("lastName")) {
+			return getLastName();
+		} if (name.equals("email")) {
+			return getEmail();
+		} if (name.equals("fksdb-id")) {
+			return Integer.toString(loginEntity.getPerson().getPersonId());
+		} else {
+			for (Integer contestId : contestMap.keySet()) {
+				if (name.equals("fksdb-" + contestMap.get(contestId) + "-email")) {
+					for (OrganizerEntity organizer : loginEntity.getPerson().getOrganizers()) {
+						if (organizer.getContestId() == contestId && organizer.getDomainAlias() != null) {
+							return organizer.getDomainAlias() + contestEmailSuffixMap.get(contestId);
+						}
+					}
+				}
+			}
+			return super.getFirstAttribute(name);
+		}
+	}
+
+	@Override
+	public Map<String, List<String>> getAttributes() {
+		Map<String, List<String>> attrs = super.getAttributes();
+		MultivaluedHashMap<String, String> all = new MultivaluedHashMap<>();
+		all.putAll(attrs);
+		all.add("firstName", getFirstName());
+		all.add("lastName", getLastName());
+		// Somehow the parent class provided null email which caused "Multiple values found ... for protocol mapper 'email' but expected just single value"
+		all.putSingle("email", getEmail());
+		all.add("fksdb-id", Integer.toString(loginEntity.getPerson().getPersonId()));
+		for (OrganizerEntity organizer : loginEntity.getPerson().getOrganizers()) {
+			String contest = contestMap.get(organizer.getContestId());
+			if (contest == null || organizer.getDomainAlias() == null) {
+				continue;
+			}
+			all.add("fksdb-" + contest + "-email", organizer.getDomainAlias() + contestEmailSuffixMap.get(organizer.getContestId()));
+		}
+		return all;
+	}
+
+	@Override
+	public Stream<String> getAttributeStream(String name) {
+		if (name.equals("firstName")) {
+			List<String> firstName = new LinkedList<>();
+			firstName.add(getFirstName());
+			return firstName.stream();
+		} else if (name.equals("lastName")) {
+			List<String> lastName = new LinkedList<>();
+			lastName.add(getLastName());
+			return lastName.stream();
+		} else if (name.equals("email")) {
+			List<String> email = new LinkedList<>();
+			email.add(getEmail());
+			return email.stream();
+		} else if (name.startsWith("fksdb-")) {
+			List<String> attribute = new LinkedList<>();
+			String value = getFirstAttribute(name);
+			if (value != null) {
+				attribute.add(value);
+			}
+			return attribute.stream();
+		} else {
+			return super.getAttributeStream(name);
+		}
 	}
 }

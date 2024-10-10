@@ -29,6 +29,11 @@ public class OrganizerEntity {
 	@Column(name = "allow_pm")
 	private boolean allowPM;
 
+	@Column(name = "domain_alias")
+	private String domainAlias;
+	@Column(name = "tex_signature")
+	private String texSignature;
+
 	public Integer getSince() {
 		return since;
 	}
@@ -51,5 +56,13 @@ public class OrganizerEntity {
 
 	public boolean getAllowPM() {
 		return allowPM;
+	}
+
+	public String getDomainAlias() {
+		return domainAlias;
+	}
+
+	public String getTexSignature() {
+		return texSignature;
 	}
 }
