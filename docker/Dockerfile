@@ -31,6 +31,8 @@ RUN mv keycloak-${version} keycloak
 FROM eclipse-temurin:21
 WORKDIR /opt/keycloak
 
+COPY fksdb-theme /opt/keycloak/themes/fksdb-theme
+
 # enable health statistics
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true

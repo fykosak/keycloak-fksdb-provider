@@ -27,5 +27,6 @@ services:
     volumes:
       - ../target/fksdb-keycloak-user-provider.jar:/opt/keycloak/providers/fksdb-provider.jar
       - ./config:/opt/keycloak/conf
+      - ../fksdb-theme:/opt/keycloak/themes/fksdb-theme
     extra_hosts:
       - "host.docker.internal:host-gateway"
