@@ -16,7 +16,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <version.hibernate.javax.persistence>1.0.0.Final</version.hibernate.javax.persistence>
 
-        <keycloak.version>25.0.4</keycloak.version>
+        <keycloak.version>26.0.6</keycloak.version>
     </properties>
 
     <dependencies>
