@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.jboss.logging.Logger;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
@@ -23,7 +22,6 @@ import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 import fykos.fksdb_keycloak_user_provider.entities.LoginEntity;
 import fykos.fksdb_keycloak_user_provider.entities.OrganizerEntity;
 import fykos.fksdb_keycloak_user_provider.entities.PersonEntity;
-import fykos.fksdb_keycloak_user_provider.services.ContestYearService;
 import fykos.fksdb_keycloak_user_provider.services.OrganizerService;
 import jakarta.persistence.EntityManager;
 
@@ -147,13 +145,11 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	/**
 	 * Get roles assigned to the user based on DB data.
 	 * Assigns `fksdb-<contest>` roles for active organizers of a contest and
-	 * `fksdb-<contest>-<app>` roles when user has an active override for one
-	 * specific application.
+	 * `fksdb-<contest>-<state>` roles for specific user states (active, passive)
 	 *
 	 */
 	public Set<String> getRoles() {
-		ContestYearService contestYearService = new ContestYearService(em);
-		OrganizerService organizerService = new OrganizerService(contestYearService);
+		OrganizerService organizerService = new OrganizerService();
 
 		Set<String> roles = new HashSet<String>();
 
@@ -165,17 +161,11 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 
 			// Contest role for active organizer
 			if (organizerService.isOrganizerActive(organizer)) {
-				roles.add("fksdb-" + contest);
+				continue;
 			}
 
-			// Explicit app roles
-			if (organizer.getAllowWiki()) {
-				roles.add("fksdb-" + contest + "-wiki");
-			}
-
-			if (organizer.getAllowPM()) {
-				roles.add("fksdb-" + contest + "-pm");
-			}
+			roles.add("fksdb-" + contest);
+			roles.add("fksdb-" + contest + "-" + organizer.getState());
 		}
 
 		return roles;
@@ -200,11 +190,14 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	public String getFirstAttribute(String name) {
 		if (name.equals("firstName")) {
 			return getFirstName();
-		} if (name.equals("lastName")) {
+		}
+		if (name.equals("lastName")) {
 			return getLastName();
-		} if (name.equals("email")) {
+		}
+		if (name.equals("email")) {
 			return getEmail();
-		} if (name.equals("fksdb-id")) {
+		}
+		if (name.equals("fksdb-id")) {
 			return Integer.toString(loginEntity.getPerson().getPersonId());
 		} else {
 			for (Integer contestId : contestMap.keySet()) {
@@ -227,7 +220,8 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		all.putAll(attrs);
 		all.add("firstName", getFirstName());
 		all.add("lastName", getLastName());
-		// Somehow the parent class provided null email which caused "Multiple values found ... for protocol mapper 'email' but expected just single value"
+		// Somehow the parent class provided null email which caused "Multiple values
+		// found ... for protocol mapper 'email' but expected just single value"
 		all.putSingle("email", getEmail());
 		all.add("fksdb-id", Integer.toString(loginEntity.getPerson().getPersonId()));
 		for (OrganizerEntity organizer : loginEntity.getPerson().getOrganizers()) {
@@ -235,7 +229,8 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 			if (contest == null || organizer.getDomainAlias() == null) {
 				continue;
 			}
-			all.add("fksdb-" + contest + "-email", organizer.getDomainAlias() + contestEmailSuffixMap.get(organizer.getContestId()));
+			all.add("fksdb-" + contest + "-email",
+					organizer.getDomainAlias() + contestEmailSuffixMap.get(organizer.getContestId()));
 		}
 		return all;
 	}

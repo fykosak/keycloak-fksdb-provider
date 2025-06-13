@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fykos</groupId>
     <artifactId>fksdb-keycloak-user-provider</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <packaging>jar</packaging>
     <name>Keycloak user provider for FKSDB</name>
 
@@ -14,9 +14,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <version.hibernate.javax.persistence>1.0.0.Final</version.hibernate.javax.persistence>
+        <version.hibernate.javax.persistence>1.1.0.Final</version.hibernate.javax.persistence>
 
-        <keycloak.version>26.0.6</keycloak.version>
+        <keycloak.version>26.2.5</keycloak.version>
     </properties>
 
     <dependencies>

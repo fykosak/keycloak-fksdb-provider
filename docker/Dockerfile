@@ -15,7 +15,7 @@ RUN mvn clean package
 
 # install everyting
 FROM eclipse-temurin:21 AS builder
-ARG version="25.0.1"
+ARG version="26.2.5"
 ARG archive_checksum="8109ac7505c6f70763c247b5e52be4667585b0ce"
 
 WORKDIR /build/

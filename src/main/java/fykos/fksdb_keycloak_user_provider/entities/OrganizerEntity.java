@@ -8,12 +8,12 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "org")
+@Table(name = "organizer")
 public class OrganizerEntity {
 
 	@Id
-	@Column(name = "org_id")
-	private int orgId;
+	@Column(name = "organizer_id")
+	private int organizerId;
 
 	@ManyToOne
 	@JoinColumn(name = "person_id")
@@ -24,15 +24,12 @@ public class OrganizerEntity {
 	private Integer since;
 	private Integer until;
 
-	@Column(name = "allow_wiki")
-	private boolean allowWiki;
-	@Column(name = "allow_pm")
-	private boolean allowPM;
-
 	@Column(name = "domain_alias")
 	private String domainAlias;
 	@Column(name = "tex_signature")
 	private String texSignature;
+
+	private String state;
 
 	public Integer getSince() {
 		return since;
@@ -50,19 +47,15 @@ public class OrganizerEntity {
 		return person;
 	}
 
-	public boolean getAllowWiki() {
-		return allowWiki;
-	}
-
-	public boolean getAllowPM() {
-		return allowPM;
-	}
-
 	public String getDomainAlias() {
 		return domainAlias;
 	}
 
 	public String getTexSignature() {
 		return texSignature;
+	}
+
+	public String getState() {
+		return state;
 	}
 }

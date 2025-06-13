@@ -26,7 +26,6 @@ import org.keycloak.storage.user.UserQueryProvider;
 import fykos.fksdb_keycloak_user_provider.entities.LoginEntity;
 import fykos.fksdb_keycloak_user_provider.entities.PersonEntity;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 
 public class FKSDBUserStorageProvider implements
@@ -159,7 +158,7 @@ public class FKSDBUserStorageProvider implements
 
 		// require at least one FKSDB role to be active
 		if (getUserAdapter(user).getRoles().size() == 0) {
-				return false;
+			return false;
 		}
 
 		// hash function as per FKSDB
