@@ -1,10 +1,14 @@
 # FKSDB keycloak user provider
-  - Docs: https://www.keycloak.org/docs/latest/server_development/index.html#_user-storage-spi
-  - Referenční implementace: https://github.com/keycloak/keycloak-quickstarts/tree/latest/extension/user-storage-jpa
+
+- Docs: https://www.keycloak.org/docs/latest/server_development/index.html#_user-storage-spi
+- Referenční implementace: https://github.com/keycloak/keycloak-quickstarts/tree/latest/extension/user-storage-jpa
 
 ## Development
+
 ### Init
+
 Třeba nainstalovat `maven` a nainstalovat dependencies spuštěním
+
 ```
 mvn install
 ```
@@ -16,21 +20,26 @@ pro přístup. Po vytvoření je potřeba vykopírovat soubor
 třeba upravit připojení k DB. Pokud se chcete připojit k databázi na hostovacím
 zařízení, je možné využít url `host.docker.internal`.
 
-
 ### Build a spuštění
+
 Build JAR archivu
+
 ```
 mvn clean package
 ```
 
 Spuštění keycloaku (ve složce `docker`)
+
 ```
 docker compose up
 ```
 
 ## Poznámky
+
 ### Keycloak nemá aktuální data z FKSDB
+
 Keycloak admin -> User Federation -> FKSDB -> Cache policy and set cache settings
 
 ### Keycloak neposílá role
+
 Keycloak admin -> Client Scopes -> roles -> Mappers -> realm roles -> Add to ID token -> true

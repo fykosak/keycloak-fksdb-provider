@@ -26,7 +26,6 @@ import fykos.fksdb_keycloak_user_provider.services.OrganizerService;
 import jakarta.persistence.EntityManager;
 
 public class UserAdapter extends AbstractUserAdapterFederatedStorage {
-
 	protected LoginEntity loginEntity;
 	protected String keycloakId;
 	protected EntityManager em;
@@ -57,7 +56,15 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 
 	@Override
 	public String getUsername() {
-		return loginEntity.getLogin();
+		// Keycloak username must not be null.
+		// So if the user does not have a username, return email instead.
+		// If email is detected on auth, Keycloak automatically searches the user by
+		// email, so it should login with email as login.
+		String login = loginEntity.getLogin();
+		if (login != null) {
+			return login;
+		}
+		return loginEntity.getPerson().getPersonInfo().getEmail();
 	}
 
 	@Override
@@ -218,10 +225,10 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		Map<String, List<String>> attrs = super.getAttributes();
 		MultivaluedHashMap<String, String> all = new MultivaluedHashMap<>();
 		all.putAll(attrs);
-		all.add("firstName", getFirstName());
-		all.add("lastName", getLastName());
 		// Somehow the parent class provided null email which caused "Multiple values
 		// found ... for protocol mapper 'email' but expected just single value"
+		all.putSingle("firstName", getFirstName());
+		all.putSingle("lastName", getLastName());
 		all.putSingle("email", getEmail());
 		all.add("fksdb-id", Integer.toString(loginEntity.getPerson().getPersonId()));
 		for (OrganizerEntity organizer : loginEntity.getPerson().getOrganizers()) {

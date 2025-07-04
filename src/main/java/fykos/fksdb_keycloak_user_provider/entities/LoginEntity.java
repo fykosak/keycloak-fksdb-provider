@@ -14,8 +14,14 @@ import jakarta.persistence.Table;
 		@NamedQuery(name = "getUserByEmail", query = "select l from LoginEntity l where l.person.personInfo.email = :email"),
 		@NamedQuery(name = "getUserCount", query = "select count(l) from LoginEntity l"),
 		@NamedQuery(name = "getAllUsers", query = "select l from LoginEntity l"),
-		@NamedQuery(name = "searchForUser", query = "select l from LoginEntity l where " +
-				"lower(l.login) like :search order by l.login"),
+		@NamedQuery(name = "searchForUser", query = """
+				select l from LoginEntity l where
+				lower(l.login) like :search
+				or l.person.otherName like :search
+				or l.person.otherName like :search
+				or l.person.familyName like :search
+				order by l.person.familyName, l.person.otherName
+				"""),
 })
 
 @Entity
