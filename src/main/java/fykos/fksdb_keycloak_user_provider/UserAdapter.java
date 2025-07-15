@@ -22,7 +22,6 @@ import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 import fykos.fksdb_keycloak_user_provider.entities.LoginEntity;
 import fykos.fksdb_keycloak_user_provider.entities.OrganizerEntity;
 import fykos.fksdb_keycloak_user_provider.entities.PersonEntity;
-import fykos.fksdb_keycloak_user_provider.services.OrganizerService;
 import jakarta.persistence.EntityManager;
 
 public class UserAdapter extends AbstractUserAdapterFederatedStorage {
@@ -156,8 +155,6 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	 *
 	 */
 	public Set<String> getRoles() {
-		OrganizerService organizerService = new OrganizerService();
-
 		Set<String> roles = new HashSet<String>();
 
 		for (OrganizerEntity organizer : loginEntity.getPerson().getOrganizers()) {
@@ -167,7 +164,7 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 			}
 
 			// Contest role for active organizer
-			if (organizerService.isOrganizerActive(organizer)) {
+			if (!organizer.isActive()) {
 				continue;
 			}
 

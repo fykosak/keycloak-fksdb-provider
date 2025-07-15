@@ -58,4 +58,11 @@ public class OrganizerEntity {
 	public String getState() {
 		return state;
 	}
+
+	public boolean isActive() {
+		if (this.state.equals("active") || this.state.equals("passive")) {
+			return true;
+		}
+		return false;
+	}
 }
