@@ -1,11 +1,14 @@
 package fykos.fksdb_keycloak_user_provider.entities;
 
+import java.util.Collection;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
@@ -39,6 +42,12 @@ public class LoginEntity {
 	@JoinColumn(name = "person_id")
 	private PersonEntity person;
 
+	@OneToMany(mappedBy = "login")
+	private Collection<BaseGrantEntity> baseGrants;
+
+	@OneToMany(mappedBy = "login")
+	private Collection<ContestGrantEntity> contestGrants;
+
 	public Integer getLoginId() {
 		return loginId;
 	}
@@ -53,5 +62,13 @@ public class LoginEntity {
 
 	public PersonEntity getPerson() {
 		return person;
+	}
+
+	public Collection<BaseGrantEntity> getBaseGrants() {
+		return baseGrants;
+	}
+
+	public Collection<ContestGrantEntity> getContestGrants() {
+		return contestGrants;
 	}
 }

@@ -19,6 +19,8 @@ import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 
+import fykos.fksdb_keycloak_user_provider.entities.BaseGrantEntity;
+import fykos.fksdb_keycloak_user_provider.entities.ContestGrantEntity;
 import fykos.fksdb_keycloak_user_provider.entities.LoginEntity;
 import fykos.fksdb_keycloak_user_provider.entities.OrganizerEntity;
 import fykos.fksdb_keycloak_user_provider.entities.PersonEntity;
@@ -169,7 +171,21 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 			}
 
 			roles.add("fksdb-" + contest);
-			roles.add("fksdb-" + contest + "-" + organizer.getState());
+			roles.add("fksdb-" + contest + "-state-" + organizer.getState());
+
+			for (ContestGrantEntity contestGrant : loginEntity.getContestGrants()) {
+				if (contestGrant.getContestId() == organizer.getContestId()) {
+					roles.add("fksdb-" + contest + "-grant-" + contestGrant.getRole());
+				}
+			}
+		}
+
+		// Add base grants only if other roles are present so only if organizer is
+		// active in at least one contest
+		if (roles.size() > 0) {
+			for (BaseGrantEntity baseGrant : loginEntity.getBaseGrants()) {
+				roles.add("fksdb-grant-" + baseGrant.getRole());
+			}
 		}
 
 		return roles;

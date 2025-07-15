@@ -8,6 +8,8 @@
         <class>fykos.fksdb_keycloak_user_provider.entities.PersonEntity</class>
         <class>fykos.fksdb_keycloak_user_provider.entities.PersonInfoEntity</class>
         <class>fykos.fksdb_keycloak_user_provider.entities.OrganizerEntity</class>
+        <class>fykos.fksdb_keycloak_user_provider.entities.ContestGrantEntity</class>
+        <class>fykos.fksdb_keycloak_user_provider.entities.BaseGrantEntity</class>
         <properties>
             <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect" />
             <!-- Sets the name of the datasource to be the same as the datasource name in quarkus.properties-->
