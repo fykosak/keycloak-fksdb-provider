@@ -1,6 +1,5 @@
 package fykos.fksdb_keycloak_user_provider;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,28 +23,28 @@ import fykos.fksdb_keycloak_user_provider.entities.ContestGrantEntity;
 import fykos.fksdb_keycloak_user_provider.entities.LoginEntity;
 import fykos.fksdb_keycloak_user_provider.entities.OrganizerEntity;
 import fykos.fksdb_keycloak_user_provider.entities.PersonEntity;
+import fykos.fksdb_keycloak_user_provider.services.ContestConfigService;
 import jakarta.persistence.EntityManager;
 
 public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	protected LoginEntity loginEntity;
 	protected String keycloakId;
 	protected EntityManager em;
-	protected Map<Integer, String> contestMap = new HashMap<>();
-	protected Map<Integer, String> contestEmailSuffixMap = new HashMap<>();
+	protected ContestConfigService contestConfig;
 
-	public UserAdapter(KeycloakSession session, RealmModel realm, ComponentModel model, LoginEntity loginEntity) {
+	public UserAdapter(
+			KeycloakSession session,
+			RealmModel realm,
+			ComponentModel model,
+			LoginEntity loginEntity,
+			ContestConfigService contestConfig) {
 		super(session, realm, model);
 		this.loginEntity = loginEntity;
 		this.em = session.getProvider(JpaConnectionProvider.class, "user-store").getEntityManager();
+		this.contestConfig = contestConfig;
 
 		// generate keycloak specific id
 		keycloakId = StorageId.keycloakId(model, loginEntity.getLoginId().toString());
-
-		contestMap.put(1, "fykos");
-		contestMap.put(2, "vyfuk");
-
-		contestEmailSuffixMap.put(1, "@fykos.cz");
-		contestEmailSuffixMap.put(2, "@vyfuk.org");
 
 		syncRoles();
 	}
@@ -160,7 +159,7 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		Set<String> roles = new HashSet<String>();
 
 		for (OrganizerEntity organizer : loginEntity.getPerson().getOrganizers()) {
-			String contest = contestMap.get(organizer.getContestId());
+			String contest = contestConfig.getContestSymbol(organizer.getContestId());
 			if (contest == null) {
 				continue;
 			}
@@ -211,26 +210,30 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		if (name.equals("firstName")) {
 			return getFirstName();
 		}
+
 		if (name.equals("lastName")) {
 			return getLastName();
 		}
+
 		if (name.equals("email")) {
 			return getEmail();
 		}
+
 		if (name.equals("fksdb-id")) {
 			return Integer.toString(loginEntity.getPerson().getPersonId());
-		} else {
-			for (Integer contestId : contestMap.keySet()) {
-				if (name.equals("fksdb-" + contestMap.get(contestId) + "-email")) {
-					for (OrganizerEntity organizer : loginEntity.getPerson().getOrganizers()) {
-						if (organizer.getContestId() == contestId && organizer.getDomainAlias() != null) {
-							return organizer.getDomainAlias() + contestEmailSuffixMap.get(contestId);
-						}
+		}
+
+		for (Integer contestId : contestConfig.getContestIds()) {
+			if (name.equals("fksdb-" + contestConfig.getContestSymbol(contestId) + "-email")) {
+				for (OrganizerEntity organizer : loginEntity.getPerson().getOrganizers()) {
+					if (organizer.getContestId() == contestId && organizer.getDomainAlias() != null) {
+						return organizer.getDomainAlias() + "@" + contestConfig.getDomain(contestId);
 					}
 				}
 			}
-			return super.getFirstAttribute(name);
 		}
+
+		return super.getFirstAttribute(name);
 	}
 
 	@Override
@@ -238,20 +241,22 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		Map<String, List<String>> attrs = super.getAttributes();
 		MultivaluedHashMap<String, String> all = new MultivaluedHashMap<>();
 		all.putAll(attrs);
+
 		// Somehow the parent class provided null email which caused "Multiple values
 		// found ... for protocol mapper 'email' but expected just single value"
 		all.putSingle("firstName", getFirstName());
 		all.putSingle("lastName", getLastName());
 		all.putSingle("email", getEmail());
 		all.add("fksdb-id", Integer.toString(loginEntity.getPerson().getPersonId()));
+
 		for (OrganizerEntity organizer : loginEntity.getPerson().getOrganizers()) {
-			String contest = contestMap.get(organizer.getContestId());
-			if (contest == null || organizer.getDomainAlias() == null) {
-				continue;
+			String contest = contestConfig.getContestSymbol(organizer.getContestId());
+			if (contest != null && organizer.getDomainAlias() != null) {
+				all.add("fksdb-" + contest + "-email",
+						organizer.getDomainAlias() + "@" + contestConfig.getDomain(organizer.getContestId()));
 			}
-			all.add("fksdb-" + contest + "-email",
-					organizer.getDomainAlias() + contestEmailSuffixMap.get(organizer.getContestId()));
 		}
+
 		return all;
 	}
 
