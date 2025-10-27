@@ -15,6 +15,12 @@ import jakarta.persistence.Table;
 @NamedQueries({
 		@NamedQuery(name = "getUserByUsername", query = "select l from LoginEntity l where l.login = :login"),
 		@NamedQuery(name = "getUserByEmail", query = "select l from LoginEntity l where l.person.personInfo.email = :email"),
+		@NamedQuery(name = "getUserByDomainAlias", query = """
+				select l from LoginEntity l
+				left join OrganizerEntity o on o.person.personId = l.person.personId
+				where o.contestId = :contestId
+				and o.domainAlias = :domainAlias
+				"""),
 		@NamedQuery(name = "getUserCount", query = "select count(l) from LoginEntity l"),
 		@NamedQuery(name = "getAllUsers", query = "select l from LoginEntity l"),
 		@NamedQuery(name = "searchForUser", query = """

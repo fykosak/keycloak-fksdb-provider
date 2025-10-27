@@ -25,6 +25,7 @@ import org.keycloak.storage.user.UserQueryProvider;
 
 import fykos.fksdb_keycloak_user_provider.entities.LoginEntity;
 import fykos.fksdb_keycloak_user_provider.entities.PersonEntity;
+import fykos.fksdb_keycloak_user_provider.services.ContestConfigService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 
@@ -42,13 +43,13 @@ public class FKSDBUserStorageProvider implements
 
 	protected KeycloakSession session;
 	protected ComponentModel model;
+	protected ContestConfigService contestConfig;
 
-	FKSDBUserStorageProvider(KeycloakSession session, ComponentModel model) {
+	FKSDBUserStorageProvider(KeycloakSession session, ComponentModel model, ContestConfigService contestConfig) {
 		this.session = session;
 		this.model = model;
+		this.contestConfig = contestConfig;
 		this.em = session.getProvider(JpaConnectionProvider.class, "user-store").getEntityManager();
-
-		logger.info("Provider created");
 	}
 
 	@Override
@@ -79,7 +80,7 @@ public class FKSDBUserStorageProvider implements
 			logger.info("Could not find user by ID: " + id);
 			return null;
 		}
-		return new UserAdapter(session, realm, model, entity);
+		return new UserAdapter(session, realm, model, entity, contestConfig);
 	}
 
 	@Override
@@ -93,22 +94,37 @@ public class FKSDBUserStorageProvider implements
 			return null;
 		}
 
-		return new UserAdapter(session, realm, model, result.get(0));
+		return new UserAdapter(session, realm, model, result.get(0), contestConfig);
 	}
 
 	@Override
 	public UserModel getUserByEmail(RealmModel realm, String email) {
 		logger.info("Get user by email: " + email);
+
+		// try to find user by domain alias
+		String[] emailParts = email.split("@", 2);
+		Integer contestId = contestConfig.getContestIdFromDomain(emailParts[1]);
+		if (contestId != null) {
+			TypedQuery<LoginEntity> query = em.createNamedQuery("getUserByDomainAlias",
+					LoginEntity.class);
+			query.setParameter("contestId", contestId);
+			query.setParameter("domainAlias", emailParts[0]);
+			List<LoginEntity> result = query.getResultList();
+			if (!result.isEmpty()) {
+				return new UserAdapter(session, realm, model, result.get(0), contestConfig);
+			}
+		}
+
+		// find user by person mail
 		TypedQuery<LoginEntity> query = em.createNamedQuery("getUserByEmail",
 				LoginEntity.class);
 		query.setParameter("email", email);
 		List<LoginEntity> result = query.getResultList();
-		if (result.isEmpty()) {
-			logger.info("Could not find user by email: " + email);
-			return null;
+		if (!result.isEmpty()) {
+			return new UserAdapter(session, realm, model, result.get(0), contestConfig);
 		}
 
-		return new UserAdapter(session, realm, model, result.get(0));
+		return null;
 	}
 
 	@Override
@@ -198,7 +214,7 @@ public class FKSDBUserStorageProvider implements
 		if (maxResults != null) {
 			query.setMaxResults(maxResults);
 		}
-		return query.getResultStream().map(entity -> new UserAdapter(session, realm, model, entity));
+		return query.getResultStream().map(entity -> new UserAdapter(session, realm, model, entity, contestConfig));
 	}
 
 	@Override
