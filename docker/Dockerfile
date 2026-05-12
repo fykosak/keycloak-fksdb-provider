@@ -15,8 +15,8 @@ RUN mvn clean package
 
 # install everyting
 FROM eclipse-temurin:21 AS builder
-ARG version="26.2.5"
-ARG archive_checksum="b0f6aa48625a090713ca0964cad47846af84ebc3"
+ARG version="26.6.1"
+ARG archive_checksum="670c9f16f6a050708cb25e47b4b984717d739b2f"
 
 WORKDIR /build/
 
@@ -46,4 +46,4 @@ COPY --from=maven --chmod=644 /build/target/fksdb-keycloak-user-provider.jar pro
 # enable custom user to write to certain system files
 RUN chmod -R 777 lib && mkdir -m 777 data
 
-ENTRYPOINT /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]

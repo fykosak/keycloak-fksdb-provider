@@ -11,7 +11,7 @@ services:
       - ./postgres:/var/lib/postgresql/data
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.2.5
+    image: quay.io/keycloak/keycloak:26.6.1
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
