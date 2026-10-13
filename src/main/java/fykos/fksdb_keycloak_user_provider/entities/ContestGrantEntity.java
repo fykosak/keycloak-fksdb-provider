@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
 public class ContestGrantEntity {
 
 	@Id
-	@Column(name = "grant_id")
+	@Column(name = "contest_grant_id")
 	private int grantId;
 
 	@ManyToOne
